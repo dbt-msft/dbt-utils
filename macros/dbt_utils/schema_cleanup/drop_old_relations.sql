@@ -1,6 +1,6 @@
 -- Tidyed up version of Jacob Matson's contribution in the dbt-sqlserver slack channel https://app.slack.com/client/T0VLPD22H/CMRMDDQ9W/thread/CMRMDDQ9W-1625096967.079800 
 
-{% macro fabric__drop_old_relations(dry_run='false') %}
+{% macro fabric__drop_old_relations(dry_run='false', log_to_stdout='true') %}
     {% if execute %}
         {% set current_models = [] %}
         {% for node in graph.nodes.values()|selectattr("resource_type", "in", ["model", "seed", "snapshot"])%}
@@ -39,19 +39,19 @@
             CONCAT( 'drop ' , relation_type , ' ' , relation_name , ';' ) is not null
     {% endset %}
 
-    {% do log(cleanup_query, info=True) %}
+    {% do log(cleanup_query, info=log_to_stdout == 'true') %}
     {% set drop_commands = run_query(cleanup_query).columns[0].values() %}
 
-    {% do log('dry_run: ' + dry_run|string, info=True) %}
+    {% do log('dry_run: ' + dry_run|string, info=log_to_stdout == 'true') %}
 
     {% if drop_commands %}
         {% for drop_command in drop_commands %}
-            {% do log(drop_command, info=True) %}
+            {% do log(drop_command, info=log_to_stdout == 'true') %}
             {% if dry_run == 'false' %}
                 {% do run_query(drop_command) %}
             {% endif %}
         {% endfor %}
     {% else %}
-        {% do log('No relations to clean.', info=True) %}
+        {% do log('No relations to clean.', info=log_to_stdout == 'true') %}
     {% endif %}
 {%- endmacro -%}
